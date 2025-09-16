@@ -1,0 +1,122 @@
+[
+  {
+    "id": "124093761",
+    "properties": {
+      "annualrevenue": "10000000",
+      "city": "Chicago",
+      "country": "United States",
+      "createdate": "2016-04-21T19:55:29.708Z",
+      "description": "BatesMeron is a Chicago full service branding and marketing agency that designs brilliant brands. We work with a broad spectrum of businesses, professional associations, nonprofits and new ventures. Applying our branding and marketing acumen, we help m...",
+      "domain": "batesmeron.com",
+      "hs_lastmodifieddate": "2025-02-07T18:36:27.607Z",
+      "hs_object_id": "124093761",
+      "hubspot_owner_id": null,
+      "industry": "GRAPHIC_DESIGN",
+      "name": "BatesMeron Sweet Design",
+      "numberofemployees": "50",
+      "state": "IL",
+      "type": null,
+      "website": "batesmeron.com",
+      "zip": "60605"
+    },
+    "created_at": "2016-04-21 19:55:29.708000+00:00",
+    "updated_at": "2025-02-07 18:36:27.607000+00:00",
+    "associations": {}
+  },
+  {
+    "id": "124679496",
+    "properties": {
+      "annualrevenue": "1000000",
+      "city": "CINCINNATI",
+      "country": "United States",
+      "createdate": "2016-04-22T02:28:27.338Z",
+      "description": null,
+      "domain": "tpg-mail.com",
+      "hs_lastmodifieddate": "2024-02-08T20:37:20.221Z",
+      "hs_object_id": "124679496",
+      "hubspot_owner_id": "11944555",
+      "industry": null,
+      "name": "tpg-mail.com",
+      "numberofemployees": "10",
+      "state": "OH",
+      "type": null,
+      "website": "tpg-mail.com",
+      "zip": "45242"
+    },
+    "created_at": "2016-04-22 02:28:27.338000+00:00",
+    "updated_at": "2024-02-08 20:37:20.221000+00:00",
+    "associations": {}
+  },
+  {
+    "id": "125758011",
+    "properties": {
+      "annualrevenue": "10000000",
+      "city": "Washington Crossing",
+      "country": "United States",
+      "createdate": "2016-04-25T17:52:43.198Z",
+      "description": "Baldwin Publishing is a company that licenses engaging, healthy content and private label recipes. They target online health decision makers with email marketing, search engine optimized website content, and social media platforms. They also motivate t...",
+      "domain": "baldwinpublishing.com",
+      "hs_lastmodifieddate": "2025-02-07T18:36:25.800Z",
+      "hs_object_id": "125758011",
+      "hubspot_owner_id": null,
+      "industry": "MARKETING_AND_ADVERTISING",
+      "name": "Baldwin Publishing Inc",
+      "numberofemployees": "50",
+      "state": "PA",
+      "type": null,
+      "website": "baldwinpublishing.com",
+      "zip": "18977"
+    },
+    "created_at": "2016-04-25 17:52:43.198000+00:00",
+    "updated_at": "2025-02-07 18:36:25.800000+00:00",
+    "associations": {}
+  },
+  {
+    "id": "125906731",
+    "properties": {
+      "annualrevenue": "1000000",
+      "city": "",
+      "country": "United Kingdom",
+      "createdate": "2016-04-26T08:46:43.692Z",
+      "description": "Bilue is a company that specializes in brand consulting, market research, communication, and management consulting. They focus on producing clear messaging options for brands and developing structures that simplify online interactions between companies...",
+      "domain": "bilue.net",
+      "hs_lastmodifieddate": "2025-02-07T18:36:52.353Z",
+      "hs_object_id": "125906731",
+      "hubspot_owner_id": null,
+      "industry": "MANAGEMENT_CONSULTING",
+      "name": "Bilue",
+      "numberofemployees": "10",
+      "state": "Greater London",
+      "type": null,
+      "website": "bilue.net",
+      "zip": "RG7 8NN"
+    },
+    "created_at": "2016-04-26 08:46:43.692000+00:00",
+    "updated_at": "2025-02-07 18:36:52.353000+00:00",
+    "associations": {}
+  },
+  {
+    "id": "126197051",
+    "properties": {
+      "annualrevenue": "50000000",
+      "city": "Mumbai Metropolitan Region",
+      "country": "India",
+      "createdate": "2016-04-26T20:08:41.070Z",
+      "description": "See relevant content for Mrfieldwork.com",
+      "domain": "mrfieldwork.com",
+      "hs_lastmodifieddate": "2025-02-07T18:37:04.508Z",
+      "hs_object_id": "126197051",
+      "hubspot_owner_id": null,
+      "industry": "MARKET_RESEARCH",
+      "name": "MRFieldwork",
+      "numberofemployees": "200",
+      "state": "Maharashtra",
+      "type": null,
+      "website": "mrfieldwork.com",
+      "zip": "401105"
+    },
+    "created_at": "2016-04-26 20:08:41.070000+00:00",
+    "updated_at": "2025-02-07 18:37:04.508000+00:00",
+    "associations": {}
+  }
+]
