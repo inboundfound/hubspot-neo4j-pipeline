@@ -41,13 +41,13 @@ Multiple apps (optional):
 HUBSPOT_ACCESS_TOKEN=pat-na1-...
 
 # Additional app token(s)
-INSTONE_ACCESS_TOKEN=pat-na1-...
+BIGCO_ACCESS_TOKEN=pat-na1-...
 # Select via HUBSPOT_APP
-# HUBSPOT_APP=INSTONE
+# HUBSPOT_APP=BIGCO
 ```
 At runtime you can also override:
 ```bash
-HUBSPOT_APP=INSTONE python main.py
+HUBSPOT_APP=BIGCO python main.py
 ```
 If `HUBSPOT_APP` is set, the pipeline uses `<APPNAME>_ACCESS_TOKEN`. Otherwise it uses `HUBSPOT_ACCESS_TOKEN`.
 
