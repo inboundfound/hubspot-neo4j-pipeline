@@ -69,7 +69,8 @@ class Neo4jLoader:
                 query = f"""
                 UNWIND $nodes AS node
                 MERGE (n:{node_type} {{hubspot_id: node.hubspot_id}})
-                SET n = node
+                SET n:HubspotRecord,
+                n = node
                 """
                 
                 try:
@@ -144,7 +145,7 @@ class Neo4jLoader:
         with self.driver.session() as session:
             # Count nodes
             node_counts = {}
-            for label in ['Contact', 'Company', 'Deal', 'Activity', 'EmailCampaign', 'WebPage']:
+            for label in ['Contact', 'Company', 'Deal', 'Activity', 'EmailCampaign', 'WebPage', 'HubspotRecord']:
                 result = session.run(f"MATCH (n:{label}) RETURN count(n) as count")
                 node_counts[label] = result.single()['count']
             
