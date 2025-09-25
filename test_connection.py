@@ -41,6 +41,9 @@ def test_neo4j_connection():
             value = result.single()['test']
             if value == 1:
                 logger.info("✅ Neo4j connection successful")
+                print(f"Neo4j URI: {NEO4J_URI}")
+                print(f"Neo4j Username: {NEO4J_USERNAME}")
+                print(f"Neo4j Password: {NEO4J_PASSWORD}")
                 driver.close()
                 return True
         return False
