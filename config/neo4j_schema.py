@@ -1,19 +1,19 @@
 # Neo4j schema definitions
 CONSTRAINTS = [
-    "CREATE CONSTRAINT contact_id IF NOT EXISTS FOR (c:Contact) REQUIRE c.hubspot_id IS UNIQUE",
-    "CREATE CONSTRAINT company_id IF NOT EXISTS FOR (c:Company) REQUIRE c.hubspot_id IS UNIQUE",
-    "CREATE CONSTRAINT deal_id IF NOT EXISTS FOR (d:Deal) REQUIRE d.hubspot_id IS UNIQUE",
-    "CREATE CONSTRAINT email_campaign_id IF NOT EXISTS FOR (e:EmailCampaign) REQUIRE e.hubspot_id IS UNIQUE",
-    "CREATE CONSTRAINT activity_id IF NOT EXISTS FOR (a:Activity) REQUIRE a.hubspot_id IS UNIQUE",
-    "CREATE CONSTRAINT webpage_url IF NOT EXISTS FOR (w:WebPage) REQUIRE w.url IS UNIQUE"
+    "CREATE CONSTRAINT hubspot_contact_id IF NOT EXISTS FOR (c:HUBSPOT_Contact) REQUIRE c.hubspot_id IS UNIQUE",
+    "CREATE CONSTRAINT hubspot_company_id IF NOT EXISTS FOR (c:HUBSPOT_Company) REQUIRE c.hubspot_id IS UNIQUE",
+    "CREATE CONSTRAINT hubspot_deal_id IF NOT EXISTS FOR (d:HUBSPOT_Deal) REQUIRE d.hubspot_id IS UNIQUE",
+    "CREATE CONSTRAINT hubspot_email_campaign_id IF NOT EXISTS FOR (e:HUBSPOT_EmailCampaign) REQUIRE e.hubspot_id IS UNIQUE",
+    "CREATE CONSTRAINT hubspot_activity_id IF NOT EXISTS FOR (a:HUBSPOT_Activity) REQUIRE a.hubspot_id IS UNIQUE",
+    "CREATE CONSTRAINT hubspot_webpage_url IF NOT EXISTS FOR (w:HUBSPOT_WebPage) REQUIRE w.url IS UNIQUE"
 ]
 
 INDEXES = [
-    "CREATE INDEX contact_email IF NOT EXISTS FOR (c:Contact) ON (c.email)",
-    "CREATE INDEX company_domain IF NOT EXISTS FOR (c:Company) ON (c.domain)",
-    "CREATE INDEX deal_stage IF NOT EXISTS FOR (d:Deal) ON (d.stage)",
-    "CREATE INDEX activity_type IF NOT EXISTS FOR (a:Activity) ON (a.type)",
-    "CREATE INDEX webpage_domain IF NOT EXISTS FOR (w:WebPage) ON (w.domain)"
+    "CREATE INDEX hubspot_contact_email IF NOT EXISTS FOR (c:HUBSPOT_Contact) ON (c.email)",
+    "CREATE INDEX hubspot_company_domain IF NOT EXISTS FOR (c:HUBSPOT_Company) ON (c.domain)",
+    "CREATE INDEX hubspot_deal_stage IF NOT EXISTS FOR (d:HUBSPOT_Deal) ON (d.stage)",
+    "CREATE INDEX hubspot_activity_type IF NOT EXISTS FOR (a:HUBSPOT_Activity) ON (a.type)",
+    "CREATE INDEX hubspot_webpage_domain IF NOT EXISTS FOR (w:HUBSPOT_WebPage) ON (w.domain)"
 ]
 
 # Node property mappings

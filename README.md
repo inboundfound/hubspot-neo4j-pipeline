@@ -210,6 +210,78 @@ If `cypher-shell` is not found:
 - Rate limits: the extractors include simple rate-limit handling and retries; re-run if you hit limits.
 
 ## Development & Tests
+
+### Local File Loading for Development
+For development and testing purposes, you can bypass HubSpot API calls by loading data from local JSON files. This is particularly useful when:
+- Testing transformations without API rate limits
+- Working with a specific dataset repeatedly
+- Debugging pipeline issues with known data
+
+To use local file loading, modify `main.py` to replace the HubSpot extraction section with:
+
+```python
+# Instead of extracting from HubSpot APIs, load from local files
+company_folder = 'data/instoneco/'  # or your data folder
+
+with open(company_folder + 'contacts.json', 'r') as f:
+    contacts = json.load(f)
+    
+with open(company_folder + 'companies.json', 'r') as f:
+    companies = json.load(f)
+    
+with open(company_folder + 'deals.json', 'r') as f:
+    deals = json.load(f)
+    
+with open(company_folder + 'engagements.json', 'r') as f:
+    engagements = json.load(f)
+    
+with open(company_folder + 'email_events.json', 'r') as f:
+    email_events = json.load(f)
+
+all_data['contacts'] = contacts
+all_data['companies'] = companies
+all_data['deals'] = deals
+all_data['engagements'] = engagements
+all_data['email_events'] = email_events
+```
+
+This approach allows you to:
+- Work offline without HubSpot connectivity
+- Test with consistent datasets
+- Speed up development cycles
+- Debug specific data scenarios
+
+### Custom Labels in Neo4j
+The `Neo4jLoader.load_all()` method supports a `custom_labels` parameter that allows you to add additional labels to nodes in Neo4j. This is useful for:
+- Multi-tenancy (adding company-specific labels)
+- Data versioning (adding timestamp or version labels)
+- Custom categorization and querying
+
+Usage example:
+```python
+loader = Neo4jLoader()
+custom_labels = {
+    "HUBSPOT_Contact": ["ACME_CORP", "Q4_2023"],
+    "HUBSPOT_Company": ["ACME_CORP"],
+    "HUBSPOT_Deal": ["ACME_CORP", "HIGH_VALUE"],
+    # Other node types can have empty lists if no custom labels needed
+}
+
+loader.load_all(nodes, relationships, custom_labels=custom_labels)
+```
+
+This will create nodes like:
+```cypher
+(:HUBSPOT_Contact:ACME_CORP:Q4_2023 {hubspot_id: "123", email: "john@example.com", ...})
+(:HUBSPOT_Company:ACME_CORP {hubspot_id: "456", name: "Example Corp", ...})
+```
+
+Benefits of custom labels:
+- **Multi-tenant queries**: `MATCH (c:HUBSPOT_Contact:ACME_CORP) RETURN c`
+- **Filtered operations**: `MATCH (d:HUBSPOT_Deal:HIGH_VALUE) WHERE d.amount > 100000`
+- **Data lifecycle management**: Easy to identify and clean up specific datasets
+
+### Test Suite
 We use pytest for smoke/integration tests.
 
 Install test dependencies (already included in requirements.txt):
@@ -229,6 +301,9 @@ pytest -q
 - loaders/ Neo4j loader
 - utils/ logging, helpers
 - tests/ pytest-based minimal suite
+
+
+
 
 ## License
 MIT
