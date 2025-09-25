@@ -9,12 +9,12 @@ class GraphTransformer:
     def __init__(self):
         self.logger = setup_logger(self.__class__.__name__)
         self.nodes = {
-            'Contact': [],
-            'Company': [],
-            'Deal': [],
-            'Activity': [],
-            'EmailCampaign': [],
-            'WebPage': []
+            'HUBSPOT_Contact': [],
+            'HUBSPOT_Company': [],
+            'HUBSPOT_Deal': [],
+            'HUBSPOT_Activity': [],
+            'HUBSPOT_EmailCampaign': [],
+            'HUBSPOT_WebPage': []
         }
         self.relationships = []
         self.processed_urls = set()
@@ -69,16 +69,16 @@ class GraphTransformer:
                 'state': props.get('state', '')
             }
             
-            self.nodes['Contact'].append(node)
+            self.nodes['HUBSPOT_Contact'].append(node)
             
-            # Create Contact->Company relationships using associatedcompanyid property
+            # Create HUBSPOT_Contact->HUBSPOT_Company relationships using associatedcompanyid property
             company_id = props.get('associatedcompanyid')
             if company_id:
                 self.relationships.append({
                     'type': 'WORKS_AT',
-                    'from_type': 'Contact',
+                    'from_type': 'HUBSPOT_Contact',
                     'from_id': str(contact['id']),
-                    'to_type': 'Company',
+                    'to_type': 'HUBSPOT_Company',
                     'to_id': str(company_id),
                     'properties': {}
                 })
@@ -86,26 +86,26 @@ class GraphTransformer:
             # Create relationships
             assoc = contact.get('associations', {})
             
-            # Contact -> Deal relationships
+            # HUBSPOT_Contact -> HUBSPOT_Deal relationships
             if 'deals' in assoc:
                 for deal in assoc['deals']:
                     self.relationships.append({
                         'type': 'ASSOCIATED_WITH',
-                        'from_type': 'Contact',
+                        'from_type': 'HUBSPOT_Contact',
                         'from_id': str(contact['id']),
-                        'to_type': 'Deal',
+                        'to_type': 'HUBSPOT_Deal',
                         'to_id': str(deal['id']),
                         'properties': {}
                     })
             
-            # Create WebPage nodes from URLs
+            # Create HUBSPOT_WebPage nodes from URLs
             if props.get('hs_analytics_last_url'):
                 self._create_webpage_node(props['hs_analytics_last_url'])
                 self.relationships.append({
                     'type': 'VISITED',
-                    'from_type': 'Contact',
+                    'from_type': 'HUBSPOT_Contact',
                     'from_id': str(contact['id']),
-                    'to_type': 'WebPage',
+                    'to_type': 'HUBSPOT_WebPage',
                     'to_id': props['hs_analytics_last_url'],
                     'properties': {
                         'timestamp': self._parse_date(props.get('hs_analytics_last_visit_timestamp')),
@@ -133,7 +133,7 @@ class GraphTransformer:
                 'state': props.get('state', '')
             }
             
-            self.nodes['Company'].append(node)
+            self.nodes['HUBSPOT_Company'].append(node)
     
     def _transform_deals(self, deals: List[Dict]):
         """Transform deal data"""
@@ -153,28 +153,28 @@ class GraphTransformer:
                 'probability': self._safe_float(props.get('hs_forecast_probability'))
             }
             
-            self.nodes['Deal'].append(node)
+            self.nodes['HUBSPOT_Deal'].append(node)
             
-            # Create Deal -> Company relationships
+            # Create HUBSPOT_Deal -> HUBSPOT_Company relationships
             assoc = deal.get('associations', {})
             if 'companies' in assoc:
                 for company in assoc['companies']:
                     self.relationships.append({
                         'type': 'BELONGS_TO',
-                        'from_type': 'Deal',
+                        'from_type': 'HUBSPOT_Deal',
                         'from_id': str(deal['id']),
-                        'to_type': 'Company',
+                        'to_type': 'HUBSPOT_Company',
                         'to_id': str(company['id']),
                         'properties': {}
                     })
-            # Also create Contact->Deal relationships (reverse direction)
+            # Also create HUBSPOT_Contact->HUBSPOT_Deal relationships (reverse direction)
             if 'contacts' in assoc:
                 for contact in assoc['contacts']:
                     self.relationships.append({
                         'type': 'ASSOCIATED_WITH',
-                        'from_type': 'Contact',
+                        'from_type': 'HUBSPOT_Contact',
                         'from_id': str(contact['id']),
-                        'to_type': 'Deal', 
+                        'to_type': 'HUBSPOT_Deal', 
                         'to_id': str(deal['id']),
                         'properties': {}
                     })
@@ -205,38 +205,39 @@ class GraphTransformer:
                 node['body'] = props.get('hs_call_body', '')
                 node['duration'] = self._safe_int(props.get('hs_call_duration'))
             elif eng_type == 'NOTE':
-                node['details'] = props.get('hs_note_body', '')[:200]  # First 200 chars
-                node['body'] = props.get('hs_note_body', '')
+                note_body = props.get('hs_note_body') or ''
+                node['details'] = note_body[:200] # First 200 chars
+                node['body'] = note_body
             elif eng_type == 'TASK':
                 node['details'] = props.get('hs_task_subject', '')
                 node['body'] = props.get('hs_task_body', '')
                 node['status'] = props.get('hs_task_status', '')
             
-            self.nodes['Activity'].append(node)
+            self.nodes['HUBSPOT_Activity'].append(node)
             
             # Create relationships
             assoc = eng.get('associations', {})
             
-            # Activity -> Contact relationships
+            # HUBSPOT_Activity -> HUBSPOT_Contact relationships
             if 'contacts' in assoc:
                 for contact in assoc['contacts']:
                     self.relationships.append({
                         'type': 'INVOLVES',
-                        'from_type': 'Activity',
+                        'from_type': 'HUBSPOT_Activity',
                         'from_id': str(eng['id']),
-                        'to_type': 'Contact',
+                        'to_type': 'HUBSPOT_Contact',
                         'to_id': str(contact['id']),
                         'properties': {}
                     })
             
-            # Activity -> Deal relationships
+            # HUBSPOT_Activity -> HUBSPOT_Deal relationships
             if 'deals' in assoc:
                 for deal in assoc['deals']:
                     self.relationships.append({
                         'type': 'RELATED_TO',
-                        'from_type': 'Activity',
+                        'from_type': 'HUBSPOT_Activity',
                         'from_id': str(eng['id']),
-                        'to_type': 'Deal',
+                        'to_type': 'HUBSPOT_Deal',
                         'to_id': str(deal['id']),
                         'properties': {}
                     })
@@ -254,7 +255,7 @@ class GraphTransformer:
                     'subject': event.get('subject', ''),
                     'sent_date': self._parse_date(event.get('created'))
                 }
-                self.nodes['EmailCampaign'].append(campaign_node)
+                self.nodes['HUBSPOT_EmailCampaign'].append(campaign_node)
             
             # Create relationships based on event type
             event_type = event.get('event_type', event.get('type', 'UNKNOWN'))
@@ -264,9 +265,9 @@ class GraphTransformer:
                 # We need to match by email - this will be done in the loader
                 rel = {
                     'type': 'OPENED' if event_type == 'OPEN' else 'CLICKED',
-                    'from_type': 'Contact',
+                    'from_type': 'HUBSPOT_Contact',
                     'from_email': self._clean_email(recipient),  # Special case - match by email
-                    'to_type': 'EmailCampaign',
+                    'to_type': 'HUBSPOT_EmailCampaign',
                     'to_id': campaign_id,
                     'properties': {
                         'timestamp': self._parse_date(event.get('created')),
@@ -299,7 +300,7 @@ class GraphTransformer:
             'title': ''  # Would need to fetch or get from another source
         }
         
-        self.nodes['WebPage'].append(node)
+        self.nodes['HUBSPOT_WebPage'].append(node)
     
     # Helper methods
     def _clean_email(self, email: str) -> str:
