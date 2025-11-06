@@ -39,8 +39,9 @@ class ContactsExtractor(BaseExtractor):
     
     def get_properties_list(self) -> List[str]:
         return [
-            'firstname', 'lastname', 'email', 'phone', 'company', 
+            'firstname', 'lastname', 'email', 'phone', 'company',
             'associatedcompanyid',  # This contains the actual company ID!
+            'hubspot_owner_id',  # Owner ID for OWNED_BY relationships
             'jobtitle', 'lifecyclestage', 'hs_lead_status',
             'createdate', 'lastmodifieddate', 'hs_email_domain',
             'website', 'address', 'city', 'state', 'zip', 'country',

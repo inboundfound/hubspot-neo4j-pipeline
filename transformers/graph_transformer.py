@@ -14,37 +14,71 @@ class GraphTransformer:
             'HUBSPOT_Deal': [],
             'HUBSPOT_Activity': [],
             'HUBSPOT_EmailCampaign': [],
-            'HUBSPOT_WebPage': []
+            'HUBSPOT_WebPage': [],
+            'HUBSPOT_User': [],
+            'HUBSPOT_EmailOpenEvent': [],
+            'HUBSPOT_EmailClickEvent': [],
+            'HUBSPOT_FormSubmission': [],
+            'HUBSPOT_PageVisit': []
         }
         self.relationships = []
         self.processed_urls = set()
         self.processed_campaigns = set()
+        self.event_id_counter = 0  # For generating unique event IDs
     
     def transform_all(self, data: Dict[str, List[Dict]]) -> Tuple[Dict, List]:
         """Transform all extracted data into nodes and relationships"""
         self.logger.info("Starting data transformation")
-        
+
+        # Transform users first (needed for owner relationships)
+        if 'users' in data:
+            self._transform_users(data['users'])
+
         # Transform entities
         if 'contacts' in data:
             self._transform_contacts(data['contacts'])
-        
+
         if 'companies' in data:
             self._transform_companies(data['companies'])
-        
+
         if 'deals' in data:
             self._transform_deals(data['deals'])
-        
+
         if 'engagements' in data:
             self._transform_engagements(data['engagements'])
-        
+
         if 'email_events' in data:
             self._transform_email_events(data['email_events'])
-        
+
+        if 'form_submissions' in data:
+            self._transform_form_submissions(data['form_submissions'])
+
         self.logger.info(f"Transformation complete. Nodes: {sum(len(n) for n in self.nodes.values())}, "
                         f"Relationships: {len(self.relationships)}")
-        
+
         return self.nodes, self.relationships
-    
+
+    def _transform_users(self, users: List[Dict]):
+        """Transform user/owner data"""
+        for user in users:
+            # Skip archived users if desired (currently including all)
+            node = {
+                'hubspot_id': str(user['id']),
+                'email': self._clean_email(user.get('email', '')),
+                'first_name': user.get('first_name', ''),
+                'last_name': user.get('last_name', ''),
+                'active': not user.get('archived', False),
+                'created_date': self._parse_date(user.get('created_at')),
+                'last_modified': self._parse_date(user.get('updated_at')),
+                'user_id': str(user.get('user_id', '')) if user.get('user_id') else ''
+            }
+
+            # Add team information if available
+            if user.get('teams'):
+                node['teams'] = ', '.join([team.get('name', '') for team in user['teams']])
+
+            self.nodes['HUBSPOT_User'].append(node)
+
     def _transform_contacts(self, contacts: List[Dict]):
         """Transform contact data"""
         for contact in contacts:
@@ -59,6 +93,7 @@ class GraphTransformer:
                 'lifecycle_stage': props.get('lifecyclestage', ''),
                 'created_date': self._parse_date(props.get('createdate')),
                 'last_modified': self._parse_date(props.get('lastmodifieddate')),
+                'owner_id': props.get('hubspot_owner_id', ''),
                 'total_email_opens': self._safe_int(props.get('hs_email_open')),
                 'total_email_clicks': self._safe_int(props.get('hs_email_click')),
                 'total_page_views': self._safe_int(props.get('hs_analytics_num_visits')),
@@ -70,7 +105,19 @@ class GraphTransformer:
             }
             
             self.nodes['HUBSPOT_Contact'].append(node)
-            
+
+            # Create HUBSPOT_Contact->HUBSPOT_User ownership relationship
+            owner_id = props.get('hubspot_owner_id')
+            if owner_id:
+                self.relationships.append({
+                    'type': 'OWNED_BY',
+                    'from_type': 'HUBSPOT_Contact',
+                    'from_id': str(contact['id']),
+                    'to_type': 'HUBSPOT_User',
+                    'to_id': str(owner_id),
+                    'properties': {}
+                })
+
             # Create HUBSPOT_Contact->HUBSPOT_Company relationships using associatedcompanyid property
             company_id = props.get('associatedcompanyid')
             if company_id:
@@ -128,13 +175,26 @@ class GraphTransformer:
                 'description': props.get('description', ''),
                 'created_date': self._parse_date(props.get('createdate')),
                 'last_modified': self._parse_date(props.get('hs_lastmodifieddate')),
+                'owner_id': props.get('hubspot_owner_id', ''),
                 'country': props.get('country', ''),
                 'city': props.get('city', ''),
                 'state': props.get('state', '')
             }
-            
+
             self.nodes['HUBSPOT_Company'].append(node)
-    
+
+            # Create HUBSPOT_Company->HUBSPOT_User ownership relationship
+            owner_id = props.get('hubspot_owner_id')
+            if owner_id:
+                self.relationships.append({
+                    'type': 'OWNED_BY',
+                    'from_type': 'HUBSPOT_Company',
+                    'from_id': str(company['id']),
+                    'to_type': 'HUBSPOT_User',
+                    'to_id': str(owner_id),
+                    'properties': {}
+                })
+
     def _transform_deals(self, deals: List[Dict]):
         """Transform deal data"""
         for deal in deals:
@@ -149,12 +209,25 @@ class GraphTransformer:
                 'close_date': self._parse_date(props.get('closedate')),
                 'created_date': self._parse_date(props.get('createdate')),
                 'last_modified': self._parse_date(props.get('hs_lastmodifieddate')),
+                'owner_id': props.get('hubspot_owner_id', ''),
                 'is_won': props.get('hs_is_closed_won', 'false').lower() == 'true',
                 'probability': self._safe_float(props.get('hs_forecast_probability'))
             }
-            
+
             self.nodes['HUBSPOT_Deal'].append(node)
-            
+
+            # Create HUBSPOT_Deal->HUBSPOT_User ownership relationship
+            owner_id = props.get('hubspot_owner_id')
+            if owner_id:
+                self.relationships.append({
+                    'type': 'OWNED_BY',
+                    'from_type': 'HUBSPOT_Deal',
+                    'from_id': str(deal['id']),
+                    'to_type': 'HUBSPOT_User',
+                    'to_id': str(owner_id),
+                    'properties': {}
+                })
+
             # Create HUBSPOT_Deal -> HUBSPOT_Company relationships
             assoc = deal.get('associations', {})
             if 'companies' in assoc:
@@ -243,7 +316,10 @@ class GraphTransformer:
                     })
     
     def _transform_email_events(self, events: List[Dict]):
-        """Transform email event data"""
+        """
+        Transform email event data into Event nodes (v2 refactor).
+        Creates HUBSPOT_EmailOpenEvent and HUBSPOT_EmailClickEvent nodes with indexed timestamps.
+        """
         for event in events:
             # Create email campaign nodes
             campaign_id = str(event.get('emailCampaignId', 'unknown'))
@@ -256,33 +332,95 @@ class GraphTransformer:
                     'sent_date': self._parse_date(event.get('created'))
                 }
                 self.nodes['HUBSPOT_EmailCampaign'].append(campaign_node)
-            
-            # Create relationships based on event type
+
+            # Create EVENT NODES instead of relationship properties
             event_type = event.get('event_type', event.get('type', 'UNKNOWN'))
             recipient = event.get('recipient')
-            
+
             if recipient and event_type in ['OPEN', 'CLICK']:
-                # We need to match by email - this will be done in the loader
-                rel = {
-                    'type': 'OPENED' if event_type == 'OPEN' else 'CLICKED',
-                    'from_type': 'HUBSPOT_Contact',
-                    'from_email': self._clean_email(recipient),  # Special case - match by email
-                    'to_type': 'HUBSPOT_EmailCampaign',
-                    'to_id': campaign_id,
-                    'properties': {
+                # Generate unique event ID
+                self.event_id_counter += 1
+                event_id = f"email_{event_type.lower()}_{self.event_id_counter}"
+
+                # Create event node with timestamp as indexed property
+                if event_type == 'OPEN':
+                    event_node = {
+                        'hubspot_id': event_id,
                         'timestamp': self._parse_date(event.get('created')),
+                        'campaign_id': campaign_id,
+                        'recipient_email': self._clean_email(recipient),
                         'device_type': event.get('deviceType', ''),
-                        'location': event.get('location', {}).get('city', '')
+                        'location': event.get('location', {}).get('city', ''),
+                        'browser': event.get('userAgent', '')
                     }
-                }
-                
-                if event_type == 'CLICK':
-                    rel['properties']['url'] = event.get('url', '')
-                    # Create webpage node for clicked URL
-                    if event.get('url'):
-                        self._create_webpage_node(event['url'])
-                
-                self.relationships.append(rel)
+                    self.nodes['HUBSPOT_EmailOpenEvent'].append(event_node)
+
+                    # Contact -> PERFORMED -> EmailOpenEvent
+                    self.relationships.append({
+                        'type': 'PERFORMED',
+                        'from_type': 'HUBSPOT_Contact',
+                        'from_email': self._clean_email(recipient),
+                        'to_type': 'HUBSPOT_EmailOpenEvent',
+                        'to_id': event_id,
+                        'properties': {}
+                    })
+
+                    # EmailOpenEvent -> FOR_CAMPAIGN -> EmailCampaign
+                    self.relationships.append({
+                        'type': 'FOR_CAMPAIGN',
+                        'from_type': 'HUBSPOT_EmailOpenEvent',
+                        'from_id': event_id,
+                        'to_type': 'HUBSPOT_EmailCampaign',
+                        'to_id': campaign_id,
+                        'properties': {}
+                    })
+
+                elif event_type == 'CLICK':
+                    clicked_url = event.get('url', '')
+                    event_node = {
+                        'hubspot_id': event_id,
+                        'timestamp': self._parse_date(event.get('created')),
+                        'campaign_id': campaign_id,
+                        'recipient_email': self._clean_email(recipient),
+                        'device_type': event.get('deviceType', ''),
+                        'location': event.get('location', {}).get('city', ''),
+                        'browser': event.get('userAgent', ''),
+                        'clicked_url': clicked_url
+                    }
+                    self.nodes['HUBSPOT_EmailClickEvent'].append(event_node)
+
+                    # Contact -> PERFORMED -> EmailClickEvent
+                    self.relationships.append({
+                        'type': 'PERFORMED',
+                        'from_type': 'HUBSPOT_Contact',
+                        'from_email': self._clean_email(recipient),
+                        'to_type': 'HUBSPOT_EmailClickEvent',
+                        'to_id': event_id,
+                        'properties': {}
+                    })
+
+                    # EmailClickEvent -> FOR_CAMPAIGN -> EmailCampaign
+                    self.relationships.append({
+                        'type': 'FOR_CAMPAIGN',
+                        'from_type': 'HUBSPOT_EmailClickEvent',
+                        'from_id': event_id,
+                        'to_type': 'HUBSPOT_EmailCampaign',
+                        'to_id': campaign_id,
+                        'properties': {}
+                    })
+
+                    # Create webpage node and relationship for clicked URL
+                    if clicked_url:
+                        self._create_webpage_node(clicked_url)
+                        # EmailClickEvent -> CLICKED_URL -> WebPage
+                        self.relationships.append({
+                            'type': 'CLICKED_URL',
+                            'from_type': 'HUBSPOT_EmailClickEvent',
+                            'from_id': event_id,
+                            'to_type': 'HUBSPOT_WebPage',
+                            'to_id': clicked_url,
+                            'properties': {}
+                        })
     
     def _create_webpage_node(self, url: str):
         """Create a webpage node from URL"""
@@ -301,7 +439,91 @@ class GraphTransformer:
         }
         
         self.nodes['HUBSPOT_WebPage'].append(node)
-    
+
+    def _transform_form_submissions(self, submissions: List[Dict]):
+        """
+        Transform form submission data into FormSubmission event nodes.
+        Creates HUBSPOT_FormSubmission nodes with indexed timestamps.
+        Links to contacts via email address matching.
+        """
+        # Build email-to-contact-id lookup from existing contacts
+        email_to_contact = {}
+        for contact in self.nodes['HUBSPOT_Contact']:
+            email = contact.get('email', '').lower().strip()
+            if email:
+                email_to_contact[email] = contact.get('hubspot_id')
+
+        matched_count = 0
+        unmatched_count = 0
+
+        for submission in submissions:
+            # Form submissions come directly from Forms API (flat structure)
+            # Not from CRM objects, so no 'properties' wrapper
+
+            # Generate unique submission ID
+            self.event_id_counter += 1
+            submission_id = f"form_submission_{self.event_id_counter}"
+
+            # Parse timestamp from milliseconds
+            submitted_at = submission.get('submitted_at')
+            timestamp = None
+            if submitted_at:
+                try:
+                    # submitted_at is in milliseconds since epoch
+                    timestamp = datetime.fromtimestamp(int(submitted_at) / 1000.0).isoformat() + 'Z'
+                except (ValueError, TypeError):
+                    timestamp = None
+
+            # Create form submission event node
+            event_node = {
+                'hubspot_id': submission_id,
+                'timestamp': timestamp,
+                'created_date': timestamp,  # Use submitted_at as created_date
+                'form_guid': submission.get('form_guid', ''),
+                'form_name': submission.get('form_name', ''),
+                'page_url': submission.get('page_url', ''),
+                'page_title': submission.get('page_title', ''),
+                'ip_address': submission.get('ip_address', ''),
+                'email': submission.get('email', '')  # Store email for reference
+            }
+
+            self.nodes['HUBSPOT_FormSubmission'].append(event_node)
+
+            # Match to contact by email address
+            submission_email = submission.get('email', '').lower().strip()
+            if submission_email and submission_email in email_to_contact:
+                contact_id = email_to_contact[submission_email]
+                matched_count += 1
+
+                # FormSubmission -> SUBMITTED_BY -> Contact
+                self.relationships.append({
+                    'type': 'SUBMITTED_BY',
+                    'from_type': 'HUBSPOT_FormSubmission',
+                    'from_id': submission_id,
+                    'to_type': 'HUBSPOT_Contact',
+                    'to_id': contact_id,
+                    'properties': {}
+                })
+            else:
+                unmatched_count += 1
+
+            # Create WebPage node for the submission page
+            page_url = submission.get('page_url')
+            if page_url:
+                self._create_webpage_node(page_url)
+                # FormSubmission -> ON_PAGE -> WebPage
+                self.relationships.append({
+                    'type': 'ON_PAGE',
+                    'from_type': 'HUBSPOT_FormSubmission',
+                    'from_id': submission_id,
+                    'to_type': 'HUBSPOT_WebPage',
+                    'to_id': page_url,
+                    'properties': {}
+                })
+
+        if matched_count > 0 or unmatched_count > 0:
+            self.logger.info(f"Form submissions: {matched_count} matched to contacts, {unmatched_count} unmatched")
+
     # Helper methods
     def _clean_email(self, email: str) -> str:
         """Clean and normalize email address"""
