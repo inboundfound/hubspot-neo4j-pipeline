@@ -53,6 +53,11 @@ class Neo4jLoader:
             "HUBSPOT_Activity": [],
             "HUBSPOT_EmailCampaign": [],
             "HUBSPOT_WebPage": [],
+            "HUBSPOT_User": [],
+            "HUBSPOT_EmailOpenEvent": [],
+            "HUBSPOT_EmailClickEvent": [],
+            "HUBSPOT_FormSubmission": [],
+            "HUBSPOT_PageVisit": [],
         },
     ):
         """Load all nodes and relationships"""
@@ -145,7 +150,7 @@ class Neo4jLoader:
 
             query = f"""
             UNWIND $rels AS rel
-            MATCH (a:Contact {{email: rel.from_email}})
+            MATCH (a:HUBSPOT_Contact {{email: rel.from_email}})
             MATCH (b:{rel['to_type']} {{hubspot_id: rel.to_id}})
             MERGE (a)-[r:{rel['type']}]->(b)
             SET r = rel.properties
