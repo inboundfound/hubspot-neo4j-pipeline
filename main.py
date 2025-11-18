@@ -34,6 +34,20 @@ def run_pipeline():
         logger.info("="*50)
         
         all_data = {}
+        # with open('data/raw/contacts.json', 'r') as f:
+        #     all_data['contacts'] = json.load(f)
+        # with open('data/raw/companies.json', 'r') as f:
+        #     all_data['companies'] = json.load(f)
+        # with open('data/raw/deals.json', 'r') as f:
+        #     all_data['deals'] = json.load(f)
+        # with open('data/raw/engagements.json', 'r') as f:
+        #     all_data['engagements'] = json.load(f)
+        # with open('data/raw/email_events.json', 'r') as f:
+        #     all_data['email_events'] = json.load(f)
+        # with open('data/raw/users.json', 'r') as f:
+        #     all_data['users'] = json.load(f)
+        # with open('data/raw/form_submissions.json', 'r') as f:
+        #     all_data['form_submissions'] = json.load(f)
         
         # Extract contacts
         logger.info("\n📋 Extracting Contacts...")
