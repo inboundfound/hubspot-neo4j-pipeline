@@ -303,6 +303,18 @@ class GraphTransformer:
                         'properties': {}
                     })
             
+            # HUBSPOT_Activity -> HUBSPOT_Company relationships
+            if 'companies' in assoc:
+                for company in assoc['companies']:
+                    self.relationships.append({
+                        'type': 'INVOLVES',
+                        'from_type': 'HUBSPOT_Activity',
+                        'from_id': str(eng['id']),
+                        'to_type': 'HUBSPOT_Company',
+                        'to_id': str(company['id']),
+                        'properties': {}
+                    })
+            
             # HUBSPOT_Activity -> HUBSPOT_Deal relationships
             if 'deals' in assoc:
                 for deal in assoc['deals']:
