@@ -39,27 +39,25 @@ class FormSubmissionsExtractor(BaseExtractor):
                 self.logger.warning("No forms found in portal")
                 return []
 
-            # Step 2: For each form, get its submissions
-            total_extracted = 0
-            total_with_email = 0
-
-            for form in forms:
-                form_guid = form.get('id')
-                form_name = form.get('name', 'Unknown')
-
-                if not form_guid:
-                    self.logger.warning(f"Form '{form_name}' has no guid, skipping")
-                    continue
-
-                try:
-                    form_submissions = self._get_form_submissions(form_guid, form_name)
-                    if form_submissions:
-                        total_with_email += len(form_submissions)
+            # Step 2: Fetch submissions for all forms in parallel
+            valid_forms = [f for f in forms if f.get('id')]
+            
+            if valid_forms:
+                self.logger.info(f"Fetching submissions for {len(valid_forms)} forms in parallel...")
+                
+                # Use parallel processor to fetch submissions
+                results = self.processor.process_batch(
+                    items=valid_forms,
+                    func=lambda form: self._get_form_submissions_safe(form.get('id'), form.get('name', 'Unknown')),
+                    desc="Fetching form submissions"
+                )
+                
+                # Collect all submissions
+                for form_submissions in results:
+                    if form_submissions and isinstance(form_submissions, list):
                         all_submissions.extend(form_submissions)
-
-                except Exception as e:
-                    self.logger.warning(f"Error getting submissions for form '{form_name}': {e}")
-                    continue
+                
+                self.logger.info(f"Completed fetching submissions from all forms")
 
         except Exception as e:
             self.logger.error(f"Error extracting form submissions: {str(e)}")
@@ -118,6 +116,17 @@ class FormSubmissionsExtractor(BaseExtractor):
             raise
 
         return all_forms
+    
+    def _get_form_submissions_safe(self, form_guid: str, form_name: str) -> List[Dict[str, Any]]:
+        """
+        Wrapper for _get_form_submissions that handles errors gracefully.
+        Returns empty list on error instead of raising exception.
+        """
+        try:
+            return self._get_form_submissions(form_guid, form_name)
+        except Exception as e:
+            self.logger.warning(f"Error getting submissions for form '{form_name}': {e}")
+            return []
 
     def _get_form_submissions(self, form_guid: str, form_name: str) -> List[Dict[str, Any]]:
         """
