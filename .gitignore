@@ -20,6 +20,7 @@ data/
 *.json
 !tests/fixtures/*.json
 *.csv
+logs/
 
 # IDE
 .vscode/
