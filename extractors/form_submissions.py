@@ -41,7 +41,7 @@ class FormSubmissionsExtractor(BaseExtractor):
 
             # Step 2: Fetch submissions for all forms in parallel
             valid_forms = [f for f in forms if f.get('id')]
-            
+
             if valid_forms:
                 self.logger.info(f"Fetching submissions for {len(valid_forms)} forms in parallel...")
                 
@@ -56,7 +56,7 @@ class FormSubmissionsExtractor(BaseExtractor):
                 for form_submissions in results:
                     if form_submissions and isinstance(form_submissions, list):
                         all_submissions.extend(form_submissions)
-                
+
                 self.logger.info(f"Completed fetching submissions from all forms")
 
         except Exception as e:
