@@ -178,6 +178,7 @@ class TemporalLoader:
                         CREATE (h:{history_label})
                         SET h = properties(n),
                             h.valid_to = $valid_to
+                        WITH n, h
                         CREATE (n)-[:HAS_HISTORY]->(h)
                         """
                         
@@ -245,6 +246,7 @@ class TemporalLoader:
                         CREATE (h:{history_label})
                         SET h = properties(n),
                             h.valid_to = $valid_to
+                        WITH n, h
                         CREATE (n)-[:HAS_HISTORY]->(h)
                         WITH n
                         SET n.is_deleted = true,
