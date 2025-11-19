@@ -11,6 +11,8 @@ from extractors.companies import CompaniesExtractor
 from extractors.deals import DealsExtractor
 from extractors.engagements import EngagementsExtractor
 from extractors.email_events import EmailEventsExtractor
+from extractors.users import UsersExtractor
+from extractors.form_submissions import FormSubmissionsExtractor
 from transformers.graph_transformer import GraphTransformer
 from loaders.neo4j_loader import Neo4jLoader
 from utils.logger import setup_logger
@@ -32,6 +34,20 @@ def run_pipeline():
         logger.info("="*50)
         
         all_data = {}
+        # with open('data/raw/contacts.json', 'r') as f:
+        #     all_data['contacts'] = json.load(f)
+        # with open('data/raw/companies.json', 'r') as f:
+        #     all_data['companies'] = json.load(f)
+        # with open('data/raw/deals.json', 'r') as f:
+        #     all_data['deals'] = json.load(f)
+        # with open('data/raw/engagements.json', 'r') as f:
+        #     all_data['engagements'] = json.load(f)
+        # with open('data/raw/email_events.json', 'r') as f:
+        #     all_data['email_events'] = json.load(f)
+        # with open('data/raw/users.json', 'r') as f:
+        #     all_data['users'] = json.load(f)
+        # with open('data/raw/form_submissions.json', 'r') as f:
+        #     all_data['form_submissions'] = json.load(f)
         
         # Extract contacts
         logger.info("\n📋 Extracting Contacts...")
@@ -62,7 +78,19 @@ def run_pipeline():
         email_events_extractor = EmailEventsExtractor()
         all_data['email_events'] = email_events_extractor.extract_all()
         email_events_extractor.save_to_json('data/raw/email_events.json')
-        
+
+        # Extract users/owners
+        logger.info("\n👥 Extracting Users/Owners...")
+        users_extractor = UsersExtractor()
+        all_data['users'] = users_extractor.extract_all()
+        users_extractor.save_to_json('data/raw/users.json')
+
+        # Extract form submissions
+        logger.info("\n📝 Extracting Form Submissions...")
+        form_submissions_extractor = FormSubmissionsExtractor()
+        all_data['form_submissions'] = form_submissions_extractor.extract_all()
+        form_submissions_extractor.save_to_json('data/raw/form_submissions.json')
+
         # Step 2: Transform data
         logger.info("\n" + "="*50)
         logger.info("STEP 2: TRANSFORMING DATA")

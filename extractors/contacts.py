@@ -3,44 +3,15 @@ from extractors.base_extractor import BaseExtractor
 from config.neo4j_schema import CONTACT_PROPERTIES
 from config.settings import BATCH_SIZE, USE_BASIC_API_FOR_CONTACTS
 from hubspot.crm.contacts import PublicObjectSearchRequest
-import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import threading
-import time
-from collections import deque
 
 class ContactsExtractor(BaseExtractor):
     """Extract all contacts from HubSpot"""
     
-    def __init__(self):
-        super().__init__()
-        self.logger = logging.getLogger(self.__class__.__name__)
-        # Rate limiting for Enterprise tier: 190 requests per 10 seconds
-        self.max_requests_per_10s = 180  # Leave some buffer
-        self.request_times = deque()
-        self.rate_limit_lock = threading.Lock()
-    
-    def _wait_for_rate_limit(self):
-        """Ensure we don't exceed rate limits"""
-        with self.rate_limit_lock:
-            now = time.time()
-            # Remove timestamps older than 10 seconds
-            while self.request_times and self.request_times[0] < now - 10:
-                self.request_times.popleft()
-            
-            # If we've hit the limit, wait
-            if len(self.request_times) >= self.max_requests_per_10s:
-                sleep_time = 10 - (now - self.request_times[0]) + 0.1
-                if sleep_time > 0:
-                    time.sleep(sleep_time)
-            
-            # Record this request
-            self.request_times.append(now)
-    
     def get_properties_list(self) -> List[str]:
         return [
-            'firstname', 'lastname', 'email', 'phone', 'company', 
+            'firstname', 'lastname', 'email', 'phone', 'company',
             'associatedcompanyid',  # This contains the actual company ID!
+            'hubspot_owner_id',  # Owner ID for OWNED_BY relationships
             'jobtitle', 'lifecyclestage', 'hs_lead_status',
             'createdate', 'lastmodifieddate', 'hs_email_domain',
             'website', 'address', 'city', 'state', 'zip', 'country',
@@ -84,10 +55,30 @@ class ContactsExtractor(BaseExtractor):
         
         return self.data
     
-    def _get_contact_associations_with_rate_limit(self, contact_id: str) -> Dict:
-        """Get associations for a contact with rate limiting"""
-        self._wait_for_rate_limit()
-        return self._get_contact_associations(contact_id)
+    def fetch_associations_parallel(self, contact_ids: List[str]) -> List[Dict]:
+        """
+        Fetch associations for multiple contacts in parallel.
+        
+        Args:
+            contact_ids: List of contact IDs to fetch associations for
+            
+        Returns:
+            List of association dictionaries in same order as input IDs
+        """
+        if not contact_ids:
+            return []
+        
+        self.logger.info(f"Fetching associations for {len(contact_ids)} contacts in parallel...")
+        
+        # Use parallel processor to fetch associations
+        associations_list = self.processor.process_batch(
+            items=contact_ids,
+            func=self._get_contact_associations,
+            desc="Fetching contact associations"
+        )
+        
+        self.logger.info(f"Completed associations for all {len(contact_ids)} contacts")
+        return associations_list
     
     def _get_contact_associations(self, contact_id: str) -> Dict:
         """Get all associations for a contact"""

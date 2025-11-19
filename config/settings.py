@@ -68,5 +68,7 @@ USE_EMAIL_EVENTS_OFFSET_PAGINATION = os.getenv('USE_EMAIL_EVENTS_OFFSET_PAGINATI
 # Log interval for contacts extraction progress
 CONTACTS_PAGE_LOG_INTERVAL = int(os.getenv('CONTACTS_PAGE_LOG_INTERVAL', '5000'))
 
-# API Rate limiting
-RATE_LIMIT_DELAY = 0.1  # seconds between API calls
+# HubSpot API Rate Limiting (Professional tier: 190 req/10s, 625k/day)
+# Using conservative limits to ensure we stay within bounds and avoid 502/500 errors
+HUBSPOT_MAX_REQUESTS_PER_10S = int(os.getenv('HUBSPOT_MAX_REQUESTS_PER_10S', '120'))
+HUBSPOT_DAILY_LIMIT = int(os.getenv('HUBSPOT_DAILY_LIMIT', '625000'))
