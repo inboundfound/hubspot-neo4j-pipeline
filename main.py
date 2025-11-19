@@ -14,7 +14,7 @@ from extractors.email_events import EmailEventsExtractor
 from extractors.users import UsersExtractor
 from extractors.form_submissions import FormSubmissionsExtractor
 from transformers.graph_transformer import GraphTransformer
-from loaders.neo4j_loader import Neo4jLoader
+from loaders.temporal_loader import TemporalLoader
 from utils.logger import setup_logger
 
 def run_pipeline():
@@ -106,13 +106,13 @@ def run_pipeline():
         with open('data/transformed/relationships.json', 'w') as f:
             json.dump(relationships, f, indent=2, default=str)
         
-        # Step 3: Load into Neo4j
+        # Step 3: Load into Neo4j with temporal tracking
         logger.info("\n" + "="*50)
-        logger.info("STEP 3: LOADING INTO NEO4J")
+        logger.info("STEP 3: LOADING INTO NEO4J (WITH TEMPORAL TRACKING)")
         logger.info("="*50)
         
-        loader = Neo4jLoader()
-        loader.load_all(nodes, relationships)
+        loader = TemporalLoader()
+        loader.load_with_history(nodes, relationships)
         
         # Verify the load
         counts = loader.verify_load()
@@ -132,9 +132,28 @@ def run_pipeline():
         logger.info(f"\nGraph summary:")
         logger.info(f"  - Nodes: {sum(len(n) for n in nodes.values())}")
         logger.info(f"  - Relationships: {len(relationships)}")
-        logger.info(f"\nNeo4j summary:")
-        logger.info(f"  - Node counts: {counts['nodes']}")
-        logger.info(f"  - Relationship counts: {counts['relationships']}")
+        logger.info(f"\nNeo4j summary (current state):")
+        
+        # Group counts by entity type
+        entity_types = ['HUBSPOT_Contact', 'HUBSPOT_Company', 'HUBSPOT_Deal', 
+                       'HUBSPOT_Activity', 'HUBSPOT_User', 'HUBSPOT_EmailCampaign',
+                       'HUBSPOT_WebPage', 'HUBSPOT_EmailOpenEvent', 'HUBSPOT_EmailClickEvent',
+                       'HUBSPOT_FormSubmission', 'HUBSPOT_PageVisit']
+        
+        for entity_type in entity_types:
+            if entity_type in counts and counts[entity_type] > 0:
+                logger.info(f"  - {entity_type}: {counts[entity_type]}")
+        
+        logger.info(f"  - Relationships: {counts.get('relationships', 0)}")
+        logger.info(f"  - Relationship changes tracked: {counts.get('relationship_changes', 0)}")
+        logger.info(f"  - Deleted nodes: {counts.get('deleted_nodes', 0)}")
+        
+        # Show history counts
+        history_total = sum(counts.get(f'{et}_HISTORY', 0) for et in 
+                           ['HUBSPOT_Contact', 'HUBSPOT_Company', 'HUBSPOT_Deal', 
+                            'HUBSPOT_Activity', 'HUBSPOT_User'])
+        if history_total > 0:
+            logger.info(f"  - Historical versions: {history_total}")
         
         # Example queries
         logger.info("\n" + "="*50)
@@ -174,7 +193,7 @@ def run_pipeline():
 if __name__ == "__main__":
     # Test connections first
     print("\n🔧 Testing connections before running pipeline...")
-    from test_connection import test_hubspot_connection, test_neo4j_connection
+    from tests.test_connection import test_hubspot_connection, test_neo4j_connection
     
     if test_hubspot_connection() and test_neo4j_connection():
         print("\n✅ Connection tests passed. Starting pipeline...\n")
