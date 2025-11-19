@@ -72,3 +72,15 @@ CONTACTS_PAGE_LOG_INTERVAL = int(os.getenv('CONTACTS_PAGE_LOG_INTERVAL', '5000')
 # Using conservative limits to ensure we stay within bounds and avoid 502/500 errors
 HUBSPOT_MAX_REQUESTS_PER_10S = int(os.getenv('HUBSPOT_MAX_REQUESTS_PER_10S', '120'))
 HUBSPOT_DAILY_LIMIT = int(os.getenv('HUBSPOT_DAILY_LIMIT', '625000'))
+
+# Immutable event relationship types (not tracked for temporal changes)
+# These are historical events that never change once created, and use email matching
+# instead of HubSpot IDs, making change detection unreliable
+IMMUTABLE_EVENT_RELATIONSHIPS = {
+    'PERFORMED',      # Email event interactions (opens/clicks)
+    'SUBMITTED_BY',   # Form submission attributions  
+    'ON_PAGE',        # Form submission pages
+    'FOR_CAMPAIGN',   # Email campaign associations
+    'CLICKED_URL',    # Email click URLs
+    'VISITED'         # Web page visits
+}
