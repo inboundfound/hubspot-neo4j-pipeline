@@ -82,7 +82,7 @@ class EngagementsExtractor(BaseExtractor):
             partial_filename = f'data/raw/engagements_{eng_type.lower()}_partial.json'
             self.save_to_json(partial_filename)
             self.logger.info(f"Saved {len(all_processed)} engagements to {partial_filename} (cumulative)")
-        
+            
         # Process any OTHER types (EMAIL, INCOMING_EMAIL, etc.)
         other_types = [t for t in engagements_by_type.keys() if t not in main_types]
         if other_types:

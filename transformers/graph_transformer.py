@@ -2,12 +2,14 @@ from typing import Dict, List, Any, Tuple
 from datetime import datetime
 from urllib.parse import urlparse
 from utils.logger import setup_logger
+from utils.change_detector import ChangeDetector
 
 class GraphTransformer:
     """Transform HubSpot data into Neo4j nodes and relationships"""
     
     def __init__(self):
         self.logger = setup_logger(self.__class__.__name__)
+        self.change_detector = ChangeDetector()
         self.nodes = {
             'HUBSPOT_Contact': [],
             'HUBSPOT_Company': [],
@@ -25,6 +27,7 @@ class GraphTransformer:
         self.processed_urls = set()
         self.processed_campaigns = set()
         self.event_id_counter = 0  # For generating unique event IDs
+        self.current_timestamp = datetime.now()
     
     def transform_all(self, data: Dict[str, List[Dict]]) -> Tuple[Dict, List]:
         """Transform all extracted data into nodes and relationships"""
@@ -59,15 +62,17 @@ class GraphTransformer:
         return self.nodes, self.relationships
 
     def _transform_users(self, users: List[Dict]):
-        """Transform user/owner data"""
+        """Transform user/owner data, including both active and archived users"""
         for user in users:
-            # Skip archived users if desired (currently including all)
+            is_archived = user.get('archived', False)
+            
             node = {
                 'hubspot_id': str(user['id']),
                 'email': self._clean_email(user.get('email', '')),
                 'first_name': user.get('first_name', ''),
                 'last_name': user.get('last_name', ''),
-                'active': not user.get('archived', False),
+                'active': not is_archived,
+                'archived': is_archived,  # Explicit archived flag for loader
                 'created_date': self._parse_date(user.get('created_at')),
                 'last_modified': self._parse_date(user.get('updated_at')),
                 'user_id': str(user.get('user_id', '')) if user.get('user_id') else ''
@@ -76,6 +81,13 @@ class GraphTransformer:
             # Add team information if available
             if user.get('teams'):
                 node['teams'] = ', '.join([team.get('name', '') for team in user['teams']])
+
+            # Add temporal fields
+            node['valid_from'] = self.current_timestamp
+            node['valid_to'] = None
+            node['is_current'] = True
+            node['is_deleted'] = False
+            node['snapshot_hash'] = self.change_detector.generate_property_hash(node)
 
             self.nodes['HUBSPOT_User'].append(node)
 
@@ -103,6 +115,13 @@ class GraphTransformer:
                 'city': props.get('city', ''),
                 'state': props.get('state', '')
             }
+            
+            # Add temporal fields
+            node['valid_from'] = self.current_timestamp
+            node['valid_to'] = None
+            node['is_current'] = True
+            node['is_deleted'] = False
+            node['snapshot_hash'] = self.change_detector.generate_property_hash(node)
             
             self.nodes['HUBSPOT_Contact'].append(node)
 
@@ -181,6 +200,13 @@ class GraphTransformer:
                 'state': props.get('state', '')
             }
 
+            # Add temporal fields
+            node['valid_from'] = self.current_timestamp
+            node['valid_to'] = None
+            node['is_current'] = True
+            node['is_deleted'] = False
+            node['snapshot_hash'] = self.change_detector.generate_property_hash(node)
+
             self.nodes['HUBSPOT_Company'].append(node)
 
             # Create HUBSPOT_Company->HUBSPOT_User ownership relationship
@@ -213,6 +239,13 @@ class GraphTransformer:
                 'is_won': props.get('hs_is_closed_won', 'false').lower() == 'true',
                 'probability': self._safe_float(props.get('hs_forecast_probability'))
             }
+
+            # Add temporal fields
+            node['valid_from'] = self.current_timestamp
+            node['valid_to'] = None
+            node['is_current'] = True
+            node['is_deleted'] = False
+            node['snapshot_hash'] = self.change_detector.generate_property_hash(node)
 
             self.nodes['HUBSPOT_Deal'].append(node)
 
@@ -285,6 +318,13 @@ class GraphTransformer:
                 node['details'] = props.get('hs_task_subject', '')
                 node['body'] = props.get('hs_task_body', '')
                 node['status'] = props.get('hs_task_status', '')
+            
+            # Add temporal fields
+            node['valid_from'] = self.current_timestamp
+            node['valid_to'] = None
+            node['is_current'] = True
+            node['is_deleted'] = False
+            node['snapshot_hash'] = self.change_detector.generate_property_hash(node)
             
             self.nodes['HUBSPOT_Activity'].append(node)
             
